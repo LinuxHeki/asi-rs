@@ -1,0 +1,8 @@
+[package]
+name = "asi"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+asi-sys = { path = "../asi-sys" }
+image = "0.24.5"
