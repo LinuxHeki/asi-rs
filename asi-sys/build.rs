@@ -1,44 +1,46 @@
 use std::{path::PathBuf, env};
 
 fn main() {
+    let dir = env::var("CARGO_MANIFEST_DIR").unwrap();
+
     #[cfg(all(target_os = "linux", target_arch = "x86_64"))]
-    println!("cargo:rustc-link-search=lib/linux/x64");
+    println!("cargo:rustc-link-search={}/lib/linux/x64", dir);
 
     #[cfg(all(target_os = "linux", target_arch = "x86"))]
-    println!("cargo:rustc-link-search=lib/linux/x86");
+    println!("cargo:rustc-link-search={}/lib/linux/x86", dir);
 
     #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
-    println!("cargo:rustc-link-search=lib/linux/armv8");
+    println!("cargo:rustc-link-search={}/lib/linux/armv8", dir);
 
     #[cfg(all(target_os = "linux", target_arch = "armv7"))]
-    println!("cargo:rustc-link-search=lib/linux/armv7");
+    println!("cargo:rustc-link-search={}/lib/linux/armv7", dir);
 
     #[cfg(all(target_os = "linux", target_arch = "armv6"))]
-    println!("cargo:rustc-link-search=lib/linux/armv6");
+    println!("cargo:rustc-link-search={}/lib/linux/armv6", dir);
 
     #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-    println!("cargo:rustc-link-search=lib/mac");
+    println!("cargo:rustc-link-search={}/lib/mac", dir);
 
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
-    println!("cargo:rustc-link-search=lib/windows/x64");
+    println!("cargo:rustc-link-search={}/lib/windows/x64", dir);
 
     #[cfg(all(target_os = "windows", target_arch = "x86"))]
-    println!("cargo:rustc-link-search=lib/windows/x86");
+    println!("cargo:rustc-link-search={}/lib/windows/x86", dir);
 
     #[cfg(all(target_os = "android", target_arch = "x86_64"))]
-    println!("cargo:rustc-link-search=lib/android/x86_64");
+    println!("cargo:rustc-link-search={}/lib/android/x86_64", dir);
 
     #[cfg(all(target_os = "android", target_arch = "x86"))]
-    println!("cargo:rustc-link-search=lib/android/x86");
+    println!("cargo:rustc-link-search={}/lib/android/x86", dir);
 
     #[cfg(all(target_os = "android", target_arch = "aarch64"))]
-    println!("cargo:rustc-link-search=lib/android/arm64-v8a");
+    println!("cargo:rustc-link-search={}/lib/android/arm64-v8a", dir);
 
     #[cfg(all(target_os = "android", target_arch = "armv7a"))]
-    println!("cargo:rustc-link-search=lib/android/armeabi-v7a");
+    println!("cargo:rustc-link-search={}/lib/android/armeabi-v7a", dir);
 
     #[cfg(all(target_os = "android", target_arch = "armv7"))]
-    println!("cargo:rustc-link-search=lib/android/armeabi");
+    println!("cargo:rustc-link-search={}/lib/android/armeabi", dir);
 
     println!("cargo:rustc-link-lib=ASICamera2");
     println!("cargo:rerun-if-changed=../include/ASICamera2.h");
