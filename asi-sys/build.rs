@@ -43,9 +43,9 @@ fn main() {
     println!("cargo:rustc-link-search={}/lib/android/armeabi", dir);
 
     println!("cargo:rustc-link-lib=ASICamera2");
-    println!("cargo:rerun-if-changed=../include/ASICamera2.h");
+    println!("cargo:rerun-if-changed=include/ASICamera2.h");
     let bindings = bindgen::Builder::default()
-        .header("../include/ASICamera2.h")
+        .header("include/ASICamera2.h")
         .parse_callbacks(Box::new(bindgen::CargoCallbacks))
         .generate()
         .expect("Unable to generate bindings");
