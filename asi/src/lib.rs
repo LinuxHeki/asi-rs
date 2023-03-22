@@ -4,7 +4,7 @@ use asi_sys::*;
 
 pub const ID_MAX: u32 = 128;
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BayerPattern {
     Rg,
     Bg,
@@ -24,7 +24,7 @@ impl From<u32> for BayerPattern {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ImgType {
     Raw8,
     Rgb24,
@@ -44,7 +44,7 @@ impl From<i32> for ImgType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GuideDirection {
     North,
     South,
@@ -52,7 +52,7 @@ pub enum GuideDirection {
     West,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FlipStatus {
     None,
     Horiz,
@@ -60,7 +60,7 @@ pub enum FlipStatus {
     Both,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum CameraMode {
     Normal,
     SoftEdge,
@@ -86,14 +86,14 @@ impl From<i32> for CameraMode {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum TrigOutput {
     PinA,
     PinB,
     None = -1,
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ErrorCode {
     Success,
     InvalidIndex,
@@ -201,7 +201,7 @@ impl From<ASI_CAMERA_INFO> for CameraInfo {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ControlType {
     Gain,
     Exposure,
@@ -284,7 +284,7 @@ impl From<ASI_CONTROL_CAPS> for ControlCaps {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ExposureStatus {
     Idle,
     Working,
@@ -304,7 +304,7 @@ impl From<u32> for ExposureStatus {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Id {
     pub id: [u8; 8]
 }
