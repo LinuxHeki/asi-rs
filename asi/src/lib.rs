@@ -19,7 +19,7 @@ impl From<u32> for BayerPattern {
             1 => Self::Bg,
             2 => Self::Gr,
             3 => Self::Gb,
-            _ => panic!("Invalid bayer pattern"),
+            i => panic!("Invalid bayer pattern: {}", i),
         }
     }
 }
@@ -39,7 +39,7 @@ impl From<i32> for ImgType {
             1 => Self::Rgb24,
             2 => Self::Raw16,
             3 => Self::Y8,
-            _ => panic!("Invalid image type"),
+            i => panic!("Invalid image type: {}", i),
         }
     }
 }
@@ -81,7 +81,7 @@ impl From<i32> for CameraMode {
             4 => Self::SoftLevel,
             5 => Self::HighLevel,
             6 => Self::LowLevel,
-            _ => panic!("Invalid camera mode"),
+            i => panic!("Invalid camera mode: {}", i),
         }
     }
 }
@@ -252,7 +252,7 @@ impl From<u32> for ControlType {
             19 => ControlType::FanOn,
             20 => ControlType::PatternAdjust,
             21 => ControlType::AntiDewHeater,
-            _ => panic!("Invalid control type"),
+            i => panic!("Invalid control type: {}", i),
         }
     }
 }
@@ -299,7 +299,7 @@ impl From<u32> for ExposureStatus {
             1 => Self::Working,
             2 => Self::Success,
             3 => Self::Failed,
-            _ => panic!("Invalid exposure status"),
+            i => panic!("Invalid exposure status: {}", i),
         }
     }
 }
