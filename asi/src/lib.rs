@@ -225,6 +225,7 @@ pub enum ControlType {
     FanOn,
     PatternAdjust,
     AntiDewHeater,
+    Gps,
 }
 
 impl From<u32> for ControlType {
@@ -252,6 +253,7 @@ impl From<u32> for ControlType {
             19 => ControlType::FanOn,
             20 => ControlType::PatternAdjust,
             21 => ControlType::AntiDewHeater,
+            22 => ControlType::Gps,
             i => panic!("Invalid control type: {}", i),
         }
     }
