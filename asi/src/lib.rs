@@ -174,7 +174,7 @@ impl ErrorCode {
 pub struct CameraInfo {
     /// The name of the camera.
     pub name: String,
-    /// This is used to control everything of the camera in other functions.Start from 0.
+    /// This is used to control everything of the camera in other functions. Start from 0.
     pub camera_id: i32,
     /// The max height of the camera.
     pub max_height: i32,
