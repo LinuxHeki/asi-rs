@@ -5,4 +5,5 @@ edition = "2021"
 
 [dependencies]
 asi-sys = { path = "../asi-sys" }
+hex = "0.4.3"
 image = "0.24.5"

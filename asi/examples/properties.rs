@@ -7,9 +7,11 @@ fn main() {
         return;
     }
     
-    for id in 0..num {
-        open_camera(id).unwrap();
-        let info = get_camera_property_by_id(id).unwrap();
+    for i in 0..num {
+        open_camera(i).unwrap();
+        let info = get_camera_property(i).unwrap();
+        let id = info.camera_id;
+
         let sn = get_serial_number(id).unwrap();
         let mode = get_camera_mode(id).unwrap();
         let supported_modes = get_camera_support_mode(id).unwrap();
@@ -18,7 +20,7 @@ fn main() {
         let roi_format = get_roi_format(id).unwrap();
 
         println!("Camera #0: {}", info.name);
-        println!("Serial number: {:?}", sn);
+        println!("Serial number: {}", hex::encode(sn.id));
         println!("Max height: {}", info.max_height);
         println!("Max width: {}", info.max_width);
         println!("Color cam: {}", info.is_color_cam);
