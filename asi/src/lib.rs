@@ -185,26 +185,26 @@ pub struct CameraInfo {
     /// The name of the camera.
     pub name: String,
     /// This is used to control everything of the camera in other functions. Start from 0.
-    pub camera_id: i32,
+    pub camera_id: u8,
     /// The max height of the camera.
-    pub max_height: i32,
+    pub max_height: u32,
     /// The max width of the camera.
-    pub max_width: i32,
+    pub max_width: u32,
     pub is_color_cam: bool,
     pub bayer_pattern: BayerPattern,
     /// 1 means bin1 which is supported by every camera, 2 means bin 2 etc..
-    pub supported_bins: Vec<i32>,
+    pub supported_bins: Vec<u32>,
     /// This array will content with the support output format type.IMG_END is the end of supported video format.
     pub supported_video_formats: Vec<ImgType>,
     /// The pixel size of the camera, unit is um. such like 5.6um.
-    pub pixel_size: f64,
+    pub pixel_size: f32,
     pub mechanical_shutter: bool,
     pub st4_port: bool,
     pub is_cooler_cam: bool,
     pub is_usb3_host: bool,
     pub is_usb3_camera: bool,
     pub elec_per_adu: f32,
-    pub bit_depth: i32,
+    pub bit_depth: u32,
     pub is_trigger_cam: bool,
 }
 
@@ -212,25 +212,29 @@ impl From<ASI_CAMERA_INFO> for CameraInfo {
     fn from(info: ASI_CAMERA_INFO) -> Self {
         Self {
             name: unsafe {std::str::from_utf8_unchecked(std::mem::transmute(info.Name.as_slice())).to_string()},
-            camera_id: info.CameraID,
-            max_height: info.MaxHeight as i32,
-            max_width: info.MaxWidth as i32,
+            camera_id: info.CameraID as u8,
+            max_height: info.MaxHeight as u32,
+            max_width: info.MaxWidth as u32,
             is_color_cam: info.IsColorCam == 1,
             bayer_pattern: BayerPattern::from(info.BayerPattern),
-            supported_bins: info.SupportedBins.iter().cloned().take_while(|&x| x != 0).collect(),
+            supported_bins: {
+                let mut bins = Vec::new();
+                info.SupportedBins.iter().cloned().take_while(|&x| x != 0).for_each(|x| bins.push(x as u32));
+                bins
+            },
             supported_video_formats: {
                 let mut formats = Vec::new();
                 info.SupportedVideoFormat.iter().cloned().take_while(|&x| x != -1).for_each(|x| { formats.push(ImgType::from(x)); });
                 formats
             },
-            pixel_size: info.PixelSize,
+            pixel_size: info.PixelSize as f32,
             mechanical_shutter: info.MechanicalShutter == 1,
             st4_port: info.ST4Port == 1,
             is_cooler_cam: info.IsCoolerCam == 1,
             is_usb3_host: info.IsUSB3Host == 1,
             is_usb3_camera: info.IsUSB3Camera == 1,
             elec_per_adu: info.ElecPerADU,
-            bit_depth: info.BitDepth,
+            bit_depth: info.BitDepth as u32,
             is_trigger_cam: info.IsTriggerCam == 1,
         }
     }
@@ -422,9 +426,9 @@ impl Camera {
     }
 
     /// Get controls property available for this camera.
-    pub fn control_caps(&self, control_index: i32) -> Result<ControlCaps, ErrorCode> {
+    pub fn control_caps(&self, control_index: usize) -> Result<ControlCaps, ErrorCode> {
         let mut control_caps = ASI_CONTROL_CAPS::default();
-        let status = unsafe {ASIGetControlCaps(self.camera_id.into(), control_index, &mut control_caps)};
+        let status = unsafe {ASIGetControlCaps(self.camera_id.into(), control_index as i32, &mut control_caps)};
         ErrorCode::from(status).to_result(ControlCaps::from(control_caps))
     }
 
@@ -444,10 +448,10 @@ impl Camera {
     }
 
     /// Get the current ROI area setting.
-    pub fn roi_format(&self) -> Result<(u32, u32, u32, ImgType), ErrorCode> {
+    pub fn roi_format(&self) -> Result<(u32, u32, i32, ImgType), ErrorCode> {
         let (mut width, mut height, mut bin, mut img_type) = (0, 0, 0, ASI_IMG_TYPE::default());
         let status = unsafe {ASIGetROIFormat(self.camera_id.into(), &mut width, &mut height, &mut bin, &mut img_type)};
-        ErrorCode::from(status).to_result((width as u32, height as u32, bin as u32, ImgType::from(img_type)))
+        ErrorCode::from(status).to_result((width as u32, height as u32, bin, ImgType::from(img_type)))
     }
 
     /// Set the ROI area before capture.
@@ -459,28 +463,28 @@ impl Camera {
     }
 
     /// Get the start position of current ROI area.
-    pub fn start_position(&self) -> Result<(i32, i32), ErrorCode> {
+    pub fn start_position(&self) -> Result<(u32, u32), ErrorCode> {
         let (mut start_x, mut start_y) = (0, 0);
         let status = unsafe {ASIGetStartPos(self.camera_id.into(), &mut start_x, &mut start_y)};
-        ErrorCode::from(status).to_result((start_x, start_y))
+        ErrorCode::from(status).to_result((start_x as u32, start_y as u32))
     }
 
     /// Set the start position of the ROI area.
     /// You can call this API to move the ROI area when video is streaming.
     /// The camera will set the ROI area to the center of the full image as default.
     /// At bin2 or bin3 mode, the position is relative to the image after binning.
-    pub fn set_start_position(&self, start_x: i32, start_y: i32) -> Result<(), ErrorCode> {
-        let status = unsafe {ASISetStartPos(self.camera_id.into(), start_x, start_y)};
+    pub fn set_start_position(&self, start_x: u32, start_y: u32) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetStartPos(self.camera_id.into(), start_x as i32, start_y as i32)};
         ErrorCode::from(status).to_result(())
     }
 
     /// Get the dropped frames.
     /// Dropped frames happen when USB traffic or harddisk write speed is slow.
     /// It will reset to 0 after stop capture.
-    pub fn get_dropped_frames(&self) -> Result<Vec<i32>, ErrorCode> {
-        let mut dropped_frames = Vec::new();
-        let status = unsafe {ASIGetDroppedFrames(self.camera_id.into(), dropped_frames.as_mut_ptr())};
-        ErrorCode::from(status).to_result(dropped_frames)
+    pub fn get_dropped_frames(&self) -> Result<u32, ErrorCode> {
+        let mut dropped_frames = 0;
+        let status = unsafe {ASIGetDroppedFrames(self.camera_id.into(), &mut dropped_frames)};
+        ErrorCode::from(status).to_result(dropped_frames as u32)
     }
 
     /// Provide a dark file's path to the function and enable dark subtract.
@@ -523,8 +527,8 @@ impl Camera {
     /// The best way is maintain one buffer loop and call this API in a loop.
     /// Please make sure the buffer size is big enough to hold one image
     /// otherwise the this API will crash.
-    pub fn get_video_data(&self, buffer: &mut [u8], wait_ms: i32) -> Result<(), ErrorCode> {
-        let status = unsafe {ASIGetVideoData(self.camera_id.into(), buffer.as_mut_ptr(), (buffer.len() as i32).into(), wait_ms)};
+    pub fn get_video_data(&self, buffer: &mut [u8], wait_ms: u32) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIGetVideoData(self.camera_id.into(), buffer.as_mut_ptr(), (buffer.len() as i32).into(), wait_ms as i32)};
         ErrorCode::from(status).to_result(())
     }
 
@@ -585,17 +589,17 @@ impl Camera {
     }
 
     /// Get pre-setting parameter.
-    pub fn gain_offset(&self) -> Result<(i32, i32, i32, i32), ErrorCode> {
+    pub fn gain_offset(&self) -> Result<(u32, u32, u32, u32), ErrorCode> {
         let (mut off_hig_dr, mut off_unity_gain, mut gain_low_rn, mut off_low_rn) = (0, 0, 0, 0);
         let status = unsafe {ASIGetGainOffset(self.camera_id.into(), &mut off_hig_dr, &mut off_unity_gain, &mut gain_low_rn, &mut off_low_rn)};
-        ErrorCode::from(status).to_result((off_hig_dr, off_unity_gain, gain_low_rn, off_low_rn))
+        ErrorCode::from(status).to_result((off_hig_dr as u32, off_unity_gain as u32, gain_low_rn as u32, off_low_rn as u32))
     }
 
     /// Get the frequently-used gain and offset.
-    pub fn lmh_gain_offset(&self) -> Result<(i32, i32, i32, i32), ErrorCode> {
+    pub fn lmh_gain_offset(&self) -> Result<(u32, u32, u32, u32), ErrorCode> {
         let (mut l_gain, mut m_gain, mut h_gain, mut h_offset) = (0, 0, 0, 0);
         let status = unsafe {ASIGetLMHGainOffset(self.camera_id.into(), &mut l_gain, &mut m_gain, &mut h_gain, &mut h_offset)};
-        ErrorCode::from(status).to_result((l_gain, m_gain, h_gain, h_offset))
+        ErrorCode::from(status).to_result((l_gain as u32, m_gain as u32, h_gain as u32, h_offset as u32))
     }
 
     /// Get the camera supported mode, only needs to call when the ```is_trigger_cam``` in the ```CameraInfo``` is ```true```.
@@ -644,8 +648,8 @@ impl Camera {
 
     /// Config the output pin (A or B) of Trigger port. If duration <= 0, this output pin will be closed. 
     /// It only needs to call when the is_trigger_cam in the CameraInfo is true.
-    pub fn set_trigger_output_io_conf(&self, pin: TrigOutput, pin_high: bool, delay: i32, duration: i32) -> Result<(), ErrorCode> {
-        let status = unsafe {ASISetTriggerOutputIOConf(self.camera_id.into(), pin as i32, pin_high as i32, delay.into(), duration.into())};
+    pub fn set_trigger_output_io_conf(&self, pin: TrigOutput, pin_high: bool, delay: usize, duration: usize) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetTriggerOutputIOConf(self.camera_id.into(), pin as i32, pin_high as i32, (delay as i32).into(), (duration as i32).into())};
         ErrorCode::from(status).to_result(())
     }
 }
@@ -669,9 +673,9 @@ pub fn camera_check(vid: i32, pid: i32) -> bool {
 }
 
 /// Get the property of connected cameras, you can do this without open the camera.
-pub fn camera_property(camera_index: i32) -> Result<CameraInfo, ErrorCode> {
+pub fn camera_property(camera_index: usize) -> Result<CameraInfo, ErrorCode> {
     let mut camera_info = ASI_CAMERA_INFO::default();
-    let error = unsafe {ASIGetCameraProperty(&mut camera_info, camera_index)};
+    let error = unsafe {ASIGetCameraProperty(&mut camera_info, camera_index as i32)};
     ErrorCode::from(error).to_result(CameraInfo::from(camera_info))
 }
 
