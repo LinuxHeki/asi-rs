@@ -380,55 +380,6 @@ impl From<ASI_SUPPORTED_MODE> for SupportedMode {
     }
 }
 
-/// This should be the first API to be called.
-/// Get number of connected ASI cameras.
-pub fn get_num_of_connected_cameras() -> i32 {
-    unsafe {
-        ASIGetNumOfConnectedCameras()
-    }
-}
-
-/// Get the product ID of each supported camera.
-pub fn get_product_ids() -> Vec<i32> {
-    unsafe {
-        let mut pids = Vec::new();
-        ASIGetProductIDs(pids.as_mut_ptr());
-        pids
-    }
-}
-
-/// Check if the device is ASI Camera.
-pub fn camera_check(vid: i32, pid: i32) -> bool {
-    unsafe {
-        ASICameraCheck(vid, pid) == 1
-    }
-}
-
-/// Get the property of connected cameras, you can do this without open the camera.
-pub fn get_camera_property(camera_index: i32) -> Result<CameraInfo, ErrorCode> {
-    unsafe {
-        let mut camera_info = ASI_CAMERA_INFO::default();
-        let result = ASIGetCameraProperty(&mut camera_info, camera_index);
-        ErrorCode::from(result).to_result(CameraInfo::from(camera_info))
-    }
-}
-
-/// Get the property of the connected cameras by ID.
-pub fn get_camera_property_by_id(camera_id: i32) -> Result<CameraInfo, ErrorCode> {
-    unsafe {
-        let mut camera_info = ASI_CAMERA_INFO::default();
-        let result = ASIGetCameraPropertyByID(camera_id, &mut camera_info);
-        ErrorCode::from(result).to_result(CameraInfo::from(camera_info))
-    }
-}
-
-/// Get version string, like "1, 13, 0503", for ASI SDK
-pub fn get_sdk_version() -> String {
-    unsafe {
-        CString::from_raw(ASIGetSDKVersion()).to_string_lossy().to_string()
-    }
-}
-
 pub struct Camera {
     camera_id: u8
 }
@@ -682,4 +633,41 @@ impl Camera {
         let status = unsafe {ASISetTriggerOutputIOConf(self.camera_id.into(), pin as i32, pin_high as i32, delay.into(), duration.into())};
         ErrorCode::from(status).to_result(())
     }
+}
+
+/// This should be the first API to be called.
+/// Get number of connected ASI cameras.
+pub fn number_of_connected_cameras() -> u8 {
+    unsafe {ASIGetNumOfConnectedCameras() as u8}
+}
+
+/// Get the product ID of each supported camera.
+pub fn product_ids() -> Vec<i32> {
+    let mut pids = Vec::new();
+    unsafe {ASIGetProductIDs(pids.as_mut_ptr())};
+    pids
+}
+
+/// Check if the device is ASI Camera.
+pub fn camera_check(vid: i32, pid: i32) -> bool {
+    unsafe {ASICameraCheck(vid, pid) == 1}
+}
+
+/// Get the property of connected cameras, you can do this without open the camera.
+pub fn camera_property(camera_index: i32) -> Result<CameraInfo, ErrorCode> {
+    let mut camera_info = ASI_CAMERA_INFO::default();
+    let error = unsafe {ASIGetCameraProperty(&mut camera_info, camera_index)};
+    ErrorCode::from(error).to_result(CameraInfo::from(camera_info))
+}
+
+/// Get the property of the connected cameras by ID.
+pub fn camera_property_by_id(camera_id: u8) -> Result<CameraInfo, ErrorCode> {
+    let mut camera_info = ASI_CAMERA_INFO::default();
+    let error = unsafe {ASIGetCameraPropertyByID(camera_id.into(), &mut camera_info)};
+    ErrorCode::from(error).to_result(CameraInfo::from(camera_info))
+}
+
+/// Get version string, like "1, 13, 0503", for ASI SDK
+pub fn sdk_version() -> String {
+    unsafe {CString::from_raw(ASIGetSDKVersion()).to_string_lossy().to_string()}
 }
