@@ -1,26 +1,25 @@
 use asi::*;
 
 fn main() {
-    let num = get_num_of_connected_cameras();
+    let num = number_of_connected_cameras();
     if num == 0 {
         println!("No connected cameras");
         return;
     }
     
     for i in 0..num {
-        open_camera(i).unwrap();
-        let info = get_camera_property(i).unwrap();
-        let id = info.camera_id;
+        let info = camera_property(i).unwrap();
+        let camera = Camera::open(info.camera_id).unwrap();
 
-        let sn = get_serial_number(id).unwrap();
-        let mode = get_camera_mode(id).unwrap();
-        let supported_modes = get_camera_support_mode(id).unwrap();
-        let gain_offset = get_gain_offset(id).unwrap();
-        let lmh_gain_offset = get_lmh_gain_offset(id).unwrap();
-        let roi_format = get_roi_format(id).unwrap();
+        let serial_number = camera.serial_number().unwrap();
+        let mode = camera.camera_mode().unwrap();
+        let supported_modes = camera.camera_supported_mode().unwrap();
+        let gain_offset = camera.gain_offset().unwrap();
+        let lmh_gain_offset = camera.lmh_gain_offset().unwrap();
+        let roi_format = camera.roi_format().unwrap();
 
         println!("Camera #0: {}", info.name);
-        println!("Serial number: {}", hex::encode(sn.id));
+        println!("Serial number: {}", serial_number);
         println!("Max height: {}", info.max_height);
         println!("Max width: {}", info.max_width);
         println!("Color cam: {}", info.is_color_cam);
@@ -44,8 +43,8 @@ fn main() {
         println!("ROI format: {:?}", roi_format);
         
         println!("Control caps:");
-        for i in 0..get_num_of_controls(id).unwrap() {
-            let cap = get_control_caps(id, i).unwrap();
+        for i in 0..camera.number_of_controls().unwrap() {
+            let cap = camera.control_caps(i).unwrap();
             println!("\tName: {}", cap.name);
             println!("\tDescription: {}", cap.description);
             println!("\tMax value: {}", cap.max_value);
@@ -56,6 +55,6 @@ fn main() {
             println!("\n");
         }
 
-        close_camera(id).unwrap();
+        camera.close().unwrap();
     }
 }
