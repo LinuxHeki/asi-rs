@@ -673,7 +673,7 @@ pub fn camera_check(vid: i32, pid: i32) -> bool {
 }
 
 /// Get the property of connected cameras, you can do this without open the camera.
-pub fn camera_property(camera_index: usize) -> Result<CameraInfo, ErrorCode> {
+pub fn camera_property(camera_index: u8) -> Result<CameraInfo, ErrorCode> {
     let mut camera_info = ASI_CAMERA_INFO::default();
     let error = unsafe {ASIGetCameraProperty(&mut camera_info, camera_index as i32)};
     ErrorCode::from(error).to_result(CameraInfo::from(camera_info))
