@@ -55,9 +55,21 @@ pub enum GuideDirection {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum FlipStatus {
     None,
-    Horiz,
-    Vert,
+    Horizontal,
+    Vertical,
     Both,
+}
+
+impl From<i32> for FlipStatus {
+    fn from(flip_status: i32) -> Self {
+        match flip_status {
+            0 => FlipStatus::None,
+            1 => FlipStatus::Horizontal,
+            2 => FlipStatus::Vertical,
+            3 => FlipStatus::Both,
+            i => panic!("Invalid flip status: {}", i),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -236,6 +248,7 @@ pub enum ControlType {
     Overclock,
     /// Returns 10*temperature.
     Temperature,
+    /// Use like this: ```FlipStatus::Both as i32```
     Flip,
     AutoMaxGain,
     /// In microseconds
@@ -415,7 +428,9 @@ impl Camera {
         ErrorCode::from(status).to_result(ControlCaps::from(control_caps))
     }
 
-    /// Get controls property value and auto value.
+    /// Get controls property value and auto value. Returns the value and if it is writtable or not.
+    /// 
+    /// For ```ControlType::Flip``` convert it to ```FlipStatus``` with ```FlipStatus::from(value)```.
     pub fn control_value(&self, control_type: ControlType) -> Result<(isize, bool), ErrorCode> {
         let (mut value, mut auto) = (0, 0);
         let status = unsafe {ASIGetControlValue(self.camera_id.into(), control_type as i32, &mut value, &mut auto)};
