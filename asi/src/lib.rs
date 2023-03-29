@@ -2,8 +2,6 @@ use std::ffi::CString;
 
 use asi_sys::*;
 
-pub const ID_MAX: u32 = 128;
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BayerPattern {
     Rg,
@@ -364,8 +362,6 @@ impl Id {
     }
 }
 
-pub type Sn = Id;
-
 #[derive(Debug, Clone, PartialEq)]
 pub struct SupportedMode {
     /// This vector will content with the support camera mode type.
@@ -426,259 +422,6 @@ pub fn get_camera_property_by_id(camera_id: i32) -> Result<CameraInfo, ErrorCode
     }
 }
 
-/// Open the camera before any operation to the camera, this will not affect the camera which is capturing.
-pub fn open_camera(camera_id: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let result = ASIOpenCamera(camera_id);
-        ErrorCode::from(result).to_result(())
-    }
-}
-
-/// Initialise the camera after open, this function may take some while, this will affect the camera which is capturing.
-pub fn init_camera(camera_id: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let result = ASIInitCamera(camera_id);
-        ErrorCode::from(result).to_result(())
-    }
-}
-
-/// You need to close the camera to free all the resource
-pub fn close_camera(camera_id: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let result = ASICloseCamera(camera_id);
-        ErrorCode::from(result).to_result(())
-    }
-}
-
-/// Get number of controls available for this camera. The camera needs be opened at first.
-pub fn get_num_of_controls(camera_id: i32) -> Result<i32, ErrorCode> {
-    unsafe {
-        let mut num = 0;
-        let result = ASIGetNumOfControls(camera_id, &mut num);
-        ErrorCode::from(result).to_result(num)
-    }
-}
-
-/// Get controls property available for this camera. The camera needs be opened at first.
-pub fn get_control_caps(camera_id: i32, control_index: i32) -> Result<ControlCaps, ErrorCode> {
-    unsafe {
-        let mut control_caps = ASI_CONTROL_CAPS::default();
-        let status = ASIGetControlCaps(camera_id, control_index, &mut control_caps);
-        ErrorCode::from(status).to_result(ControlCaps::from(control_caps))
-    }
-}
-
-/// Get controls property value and auto value.
-pub fn get_control_value(camera_id: i32, control_type: ControlType) -> Result<(i32, bool), ErrorCode> {
-    unsafe {
-        let (mut value, mut auto) = (0, 0);
-        let status = ASIGetControlValue(camera_id, control_type as i32, &mut value, &mut auto);
-        ErrorCode::from(status).to_result((value as i32, auto == 1))
-    }
-}
-
-/// Set controls property value and auto value.
-pub fn set_control_value(camera_id: i32, control_type: ControlType, value: i32, auto: bool) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASISetControlValue(camera_id, control_type as i32, value.into(), auto.into());
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Set the ROI area before capture.
-/// You must stop capture before call it.
-/// The width and height is the value after binning.
-pub fn set_roi_format(camera_id: i32, width: i32, height: i32, bin: i32, img_type: ImgType) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASISetROIFormat(camera_id, width, height, bin, img_type as i32);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Get the current ROI area setting.
-pub fn get_roi_format(camera_id: i32) -> Result<(i32, i32, i32, ImgType), ErrorCode> {
-    unsafe {
-        let (mut width, mut height, mut bin, mut img_type) = (0, 0, 0, ASI_IMG_TYPE::default());
-        let status = ASIGetROIFormat(camera_id, &mut width, &mut height, &mut bin, &mut img_type);
-        ErrorCode::from(status).to_result((width, height, bin, ImgType::from(img_type)))
-    }
-}
-
-/// Set the start position of the ROI area.
-/// You can call this API to move the ROI area when video is streaming.
-/// The camera will set the ROI area to the center of the full image as default.
-/// At bin2 or bin3 mode, the position is relative to the image after binning.
-pub fn set_start_pos(camera_id: i32, start_x: i32, start_y: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASISetStartPos(camera_id, start_x, start_y);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Get the start position of current ROI area.
-pub fn get_start_pos(camera_id: i32) -> Result<(i32, i32), ErrorCode> {
-    unsafe {
-        let (mut start_x, mut start_y) = (0, 0);
-        let status = ASIGetStartPos(camera_id, &mut start_x, &mut start_y);
-        ErrorCode::from(status).to_result((start_x, start_y))
-    }
-}
-
-/// Get the dropped frames.
-/// Dropped frames happen when USB traffic or harddisk write speed is slow.
-/// It will reset to 0 after stop capture.
-pub fn get_dropped_frames(camera_id: i32) -> Result<Vec<i32>, ErrorCode> {
-    unsafe {
-        let mut dropped_frames = Vec::new();
-        let status = ASIGetDroppedFrames(camera_id, dropped_frames.as_mut_ptr());
-        ErrorCode::from(status).to_result(dropped_frames)
-    }
-}
-
-/// Provide a dark file's path to the function and enable dark subtract.
-/// This is used when there is hot pixel or need to do long exposure.
-/// You'd better make this dark file from the "dark subtract" funtion 
-/// of the "video capture filter" directshow page.
-/// The dark file's size should be the same of camera's max width and height 
-/// and should be RGB8 raw format. It will be on even if you change the ROI setting.
-/// It only corrects hot pixels if output isn't 16bit.
-/// It will be remembered in registry, so "Dark subtract" is on next time if you close your app.
-pub fn enable_dark_subtract(camera_id: i32, path: &str) -> Result<(), ErrorCode> {
-    unsafe {
-        let path = CString::new(path).unwrap().into_raw();
-        let status = ASIEnableDarkSubtract(camera_id, path);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Disable the dark subtract function.
-/// You'd better call it at start if you don't want to use it,
-/// because dark subtract function is remembered on windows platform.
-pub fn disable_dark_subtract(camera_id: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIDisableDarkSubtract(camera_id);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Start video capture.
-/// Then you can get the data from function get_video_data
-pub fn start_video_capture(camera_id: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIStartVideoCapture(camera_id);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Stop video capture.
-pub fn stop_video_capture(camera_id: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIStopVideoCapture(camera_id);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Get data from the video buffer. The buffer is very small.
-/// You need to call this API as fast as possible, otherwise frame will be discarded.
-/// The best way is maintain one buffer loop and call this API in a loop.
-/// Please make sure the buffer size is big enough to hold one image
-/// otherwise the this API will crash.
-pub fn get_video_data(camera_id: i32, buffer: &mut [u8], wait_ms: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIGetVideoData(camera_id, buffer.as_mut_ptr(), (buffer.len() as i32).into(), wait_ms);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// PulseGuide of the ST4 port on. This function only works on modules which have ST4 port.
-pub fn pulse_guide_on(camera_id: i32, direction: GuideDirection) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIPulseGuideOn(camera_id, direction as i32);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// PulseGuide of the ST4 port off. This function only works on modules which have ST4 port.
-pub fn pulse_guide_off(camera_id: i32, direction: GuideDirection) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIPulseGuideOff(camera_id, direction as i32);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Start camera exposure.
-/// Start exposure and check the exposure status then get the data.
-pub fn start_exposure(camera_id: i32, is_dark: bool) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIStartExposure(camera_id, is_dark as i32);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// To cancel the long exposure which is on.
-pub fn stop_exposure(camera_id: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIStopExposure(camera_id);
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// To get the exposure status, work with start_exposure.
-/// You can read the data if you get ```ExposureStatus::Success``` or you have to restart exposure again
-/// if you get ```ExposureStatus::Failed```
-pub fn get_exp_status(camera_id: i32) -> Result<ExposureStatus, ErrorCode> {
-    unsafe {
-        let mut exposure_status = ASI_EXPOSURE_STATUS::default();
-        let status = ASIGetExpStatus(camera_id, &mut exposure_status);
-        ErrorCode::from(status).to_result(ExposureStatus::from(exposure_status))
-    }
-}
-
-/// Get data after exposure.
-/// Please make sure the buffer size is big enough to hold one image
-/// otherwise the this API will crash.
-pub fn get_data_after_exp(camera_id: i32, buffer: &mut [u8]) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASIGetDataAfterExp(camera_id, buffer.as_mut_ptr(), (buffer.len() as i32).into());
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Get camera id stored in flash, only available for USB3.0 cameras.
-pub fn get_id(camera_id: i32) -> Result<Id, ErrorCode> {
-    unsafe {
-        let mut id = ASI_ID::default();
-        let status = ASIGetID(camera_id, &mut id);
-        ErrorCode::from(status).to_result(Id::from(id))
-    }
-}
-
-/// Write camera id to flash, only available for USB3.0 cameras.
-pub fn set_id(camera_id: i32, id: Id) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASISetID(camera_id, id.to_asi_id());
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Get pre-setting parameter.
-pub fn get_gain_offset(camera_id: i32) -> Result<(i32, i32, i32, i32), ErrorCode> {
-    unsafe {
-        let (mut off_hig_dr, mut off_unity_gain, mut gain_low_rn, mut off_low_rn) = (0, 0, 0, 0);
-        let status = ASIGetGainOffset(camera_id, &mut off_hig_dr, &mut off_unity_gain, &mut gain_low_rn, &mut off_low_rn);
-        ErrorCode::from(status).to_result((off_hig_dr, off_unity_gain, gain_low_rn, off_low_rn))
-    }
-}
-
-/// Get the frequently-used gain and offset.
-pub fn get_lmh_gain_offset(camera_id: i32) -> Result<(i32, i32, i32, i32), ErrorCode> {
-    unsafe {
-        let (mut l_gain, mut m_gain, mut h_gain, mut h_offset) = (0, 0, 0, 0);
-        let status = ASIGetLMHGainOffset(camera_id, &mut l_gain, &mut m_gain, &mut h_gain, &mut h_offset);
-        ErrorCode::from(status).to_result((l_gain, m_gain, h_gain, h_offset))
-    }
-}
-
 /// Get version string, like "1, 13, 0503", for ASI SDK
 pub fn get_sdk_version() -> String {
     unsafe {
@@ -686,67 +429,257 @@ pub fn get_sdk_version() -> String {
     }
 }
 
-/// Get the camera supported mode, only needs to call when the is_trigger_cam in the CameraInfo is true.
-pub fn get_camera_support_mode(camera_id: i32) -> Result<SupportedMode, ErrorCode> {
-    unsafe {
+pub struct Camera {
+    camera_id: u8
+}
+
+impl Camera {
+    /// Opens and initializes the camera.
+    pub fn open(camera_id: u8) -> Result<Self, ErrorCode> {
+        let error = unsafe {ASIOpenCamera(camera_id.into())};
+        ErrorCode::from(error).to_result(())?;
+
+        let error = unsafe {ASIInitCamera(camera_id.into())};
+        let camera = Camera { camera_id };
+        ErrorCode::from(error).to_result(camera)
+    }
+
+    /// Close the camera to free all the resource.
+    pub fn close(self) -> Result<(), ErrorCode> {
+        let error = unsafe {ASICloseCamera(self.camera_id.into())};
+        ErrorCode::from(error).to_result(())
+    }
+
+    /// Get number of controls available for this camera.
+    pub fn number_of_controls(&self) -> Result<usize, ErrorCode> {
+        let mut num = 0;
+        let error = unsafe {ASIGetNumOfControls(self.camera_id.into(), &mut num)};
+        ErrorCode::from(error).to_result(num as usize)
+    }
+
+    /// Get controls property available for this camera.
+    pub fn control_caps(&self, control_index: i32) -> Result<ControlCaps, ErrorCode> {
+        let mut control_caps = ASI_CONTROL_CAPS::default();
+        let status = unsafe {ASIGetControlCaps(self.camera_id.into(), control_index, &mut control_caps)};
+        ErrorCode::from(status).to_result(ControlCaps::from(control_caps))
+    }
+
+    /// Get controls property value and auto value.
+    pub fn control_value(&self, control_type: ControlType) -> Result<(isize, bool), ErrorCode> {
+        let (mut value, mut auto) = (0, 0);
+        let status = unsafe {ASIGetControlValue(self.camera_id.into(), control_type as i32, &mut value, &mut auto)};
+        ErrorCode::from(status).to_result((value as isize, auto == 1))
+    }
+
+    /// Set controls property value and auto value.
+    pub fn set_control_value(&self, control_type: ControlType, value: i32, auto: bool) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetControlValue(self.camera_id.into(), control_type as i32, value.into(), auto.into())};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Get the current ROI area setting.
+    pub fn roi_format(&self) -> Result<(u32, u32, u32, ImgType), ErrorCode> {
+        let (mut width, mut height, mut bin, mut img_type) = (0, 0, 0, ASI_IMG_TYPE::default());
+        let status = unsafe {ASIGetROIFormat(self.camera_id.into(), &mut width, &mut height, &mut bin, &mut img_type)};
+        ErrorCode::from(status).to_result((width as u32, height as u32, bin as u32, ImgType::from(img_type)))
+    }
+
+    /// Set the ROI area before capture.
+    /// You must stop the capture before call it.
+    /// The width and height is the value after binning.
+    pub fn set_roi_format(&self, width: u32, height: u32, bin: u32, img_type: ImgType) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetROIFormat(self.camera_id.into(), width as i32, height as i32, bin as i32, img_type as i32)};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Get the start position of current ROI area.
+    pub fn start_position(&self) -> Result<(i32, i32), ErrorCode> {
+        let (mut start_x, mut start_y) = (0, 0);
+        let status = unsafe {ASIGetStartPos(self.camera_id.into(), &mut start_x, &mut start_y)};
+        ErrorCode::from(status).to_result((start_x, start_y))
+    }
+
+    /// Set the start position of the ROI area.
+    /// You can call this API to move the ROI area when video is streaming.
+    /// The camera will set the ROI area to the center of the full image as default.
+    /// At bin2 or bin3 mode, the position is relative to the image after binning.
+    pub fn set_start_position(&self, start_x: i32, start_y: i32) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetStartPos(self.camera_id.into(), start_x, start_y)};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Get the dropped frames.
+    /// Dropped frames happen when USB traffic or harddisk write speed is slow.
+    /// It will reset to 0 after stop capture.
+    pub fn get_dropped_frames(&self) -> Result<Vec<i32>, ErrorCode> {
+        let mut dropped_frames = Vec::new();
+        let status = unsafe {ASIGetDroppedFrames(self.camera_id.into(), dropped_frames.as_mut_ptr())};
+        ErrorCode::from(status).to_result(dropped_frames)
+    }
+
+    /// Provide a dark file's path to the function and enable dark subtract.
+    /// This is used when there is hot pixel or need to do long exposure.
+    /// You'd better make this dark file from the "dark subtract" funtion 
+    /// of the "video capture filter" directshow page.
+    /// The dark file's size should be the same of camera's max width and height 
+    /// and should be RGB8 raw format. It will be on even if you change the ROI setting.
+    /// It only corrects hot pixels if output isn't 16bit.
+    /// It will be remembered in registry, so "Dark subtract" is on next time if you close your app.
+    pub fn enable_dark_subtract(&self, path: &str) -> Result<(), ErrorCode> {
+        let path = CString::new(path).unwrap().into_raw();
+        let status = unsafe {ASIEnableDarkSubtract(self.camera_id.into(), path)};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Disable the dark subtract function.
+    /// You'd better call it at start if you don't want to use it,
+    /// because dark subtract function is remembered on windows platform.
+    pub fn disable_dark_subtract(&self) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIDisableDarkSubtract(self.camera_id.into())};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Start video capture.
+    /// Then you can get the data from function get_video_data.
+    pub fn start_video_capture(&self) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIStartVideoCapture(self.camera_id.into())};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Stop video capture.
+    pub fn stop_video_capture(&self) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIStopVideoCapture(self.camera_id.into())};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Get data from the video buffer. The buffer is very small.
+    /// You need to call this API as fast as possible, otherwise frame will be discarded.
+    /// The best way is maintain one buffer loop and call this API in a loop.
+    /// Please make sure the buffer size is big enough to hold one image
+    /// otherwise the this API will crash.
+    pub fn get_video_data(&self, buffer: &mut [u8], wait_ms: i32) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIGetVideoData(self.camera_id.into(), buffer.as_mut_ptr(), (buffer.len() as i32).into(), wait_ms)};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// PulseGuide of the ST4 port on. This function only works on modules which have ST4 port.
+    pub fn pulse_guide_on(&self, direction: GuideDirection) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIPulseGuideOn(self.camera_id.into(), direction as i32)};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// PulseGuide of the ST4 port off. This function only works on modules which have ST4 port.
+    pub fn pulse_guide_off(&self, direction: GuideDirection) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIPulseGuideOff(self.camera_id.into(), direction as i32)};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Start camera exposure.
+    /// Start exposure and check the exposure status then get the data.
+    /// ```is_dark``` means dark frame if there is mechanical shutter on the camera otherwise useless.
+    pub fn start_exposure(&self, is_dark: bool) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIStartExposure(self.camera_id.into(), is_dark as i32)};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// To cancel the long exposure which is on.
+    pub fn stop_exposure(&self) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIStopExposure(self.camera_id.into())};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// To get the exposure status, work with start_exposure.
+    /// You can read the data if you get ```ExposureStatus::Success``` or you have to restart exposure again
+    /// if you get ```ExposureStatus::Failed```
+    pub fn exposure_status(&self) -> Result<ExposureStatus, ErrorCode> {
+        let mut exposure_status = ASI_EXPOSURE_STATUS::default();
+        let status = unsafe {ASIGetExpStatus(self.camera_id.into(), &mut exposure_status)};
+        ErrorCode::from(status).to_result(ExposureStatus::from(exposure_status))
+    }
+
+    /// Get data after exposure.
+    /// Please make sure the buffer size is big enough to hold one image
+    /// otherwise the this API will crash.
+    pub fn get_data_after_exposure(&self, buffer: &mut [u8]) -> Result<(), ErrorCode> {
+        let status = unsafe {ASIGetDataAfterExp(self.camera_id.into(), buffer.as_mut_ptr(), (buffer.len() as i32).into())};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Get camera id stored in flash, only available for USB3.0 cameras.
+    pub fn id(&self) -> Result<Id, ErrorCode> {
+        let mut id = ASI_ID::default();
+        let status = unsafe {ASIGetID(self.camera_id.into(), &mut id)};
+        ErrorCode::from(status).to_result(Id::from(id))
+    }
+
+    /// Write camera id to flash, only available for USB3.0 cameras.
+    pub fn set_id(&self, id: Id) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetID(self.camera_id.into(), id.to_asi_id())};
+        ErrorCode::from(status).to_result(())
+    }
+
+    /// Get pre-setting parameter.
+    pub fn gain_offset(&self) -> Result<(i32, i32, i32, i32), ErrorCode> {
+        let (mut off_hig_dr, mut off_unity_gain, mut gain_low_rn, mut off_low_rn) = (0, 0, 0, 0);
+        let status = unsafe {ASIGetGainOffset(self.camera_id.into(), &mut off_hig_dr, &mut off_unity_gain, &mut gain_low_rn, &mut off_low_rn)};
+        ErrorCode::from(status).to_result((off_hig_dr, off_unity_gain, gain_low_rn, off_low_rn))
+    }
+
+    /// Get the frequently-used gain and offset.
+    pub fn lmh_gain_offset(&self) -> Result<(i32, i32, i32, i32), ErrorCode> {
+        let (mut l_gain, mut m_gain, mut h_gain, mut h_offset) = (0, 0, 0, 0);
+        let status = unsafe {ASIGetLMHGainOffset(self.camera_id.into(), &mut l_gain, &mut m_gain, &mut h_gain, &mut h_offset)};
+        ErrorCode::from(status).to_result((l_gain, m_gain, h_gain, h_offset))
+    }
+
+    /// Get the camera supported mode, only needs to call when the ```is_trigger_cam``` in the ```CameraInfo``` is ```true```.
+    pub fn camera_supported_mode(&self) -> Result<SupportedMode, ErrorCode> {
         let mut supported_mode = ASI_SUPPORTED_MODE::default();
-        let status = ASIGetCameraSupportMode(camera_id, &mut supported_mode);
+        let status = unsafe {ASIGetCameraSupportMode(self.camera_id.into(), &mut supported_mode)};
         ErrorCode::from(status).to_result(SupportedMode::from(supported_mode))
     }
-}
 
-/// Get the camera current mode, only needs to call when the is_trigger_cam in the CameraInfo is true.
-pub fn get_camera_mode(camera_id: i32) -> Result<CameraMode, ErrorCode> {
-    unsafe {
+    /// Get the camera current mode, only needs to call when the ```is_trigger_cam``` in the ```CameraInfo``` is ```true```.
+    pub fn camera_mode(&self) -> Result<CameraMode, ErrorCode> {
         let mut camera_mode = ASI_CAMERA_MODE::default();
-        let status = ASIGetCameraMode(camera_id, &mut camera_mode);
+        let status = unsafe {ASIGetCameraMode(self.camera_id.into(), &mut camera_mode)};
         ErrorCode::from(status).to_result(CameraMode::from(camera_mode))
     }
-}
 
-/// Set the camera mode, only needs to call when the is_trigger_cam in the CameraInfo is true.
-pub fn set_camera_mode(camera_id: i32, camera_mode: CameraMode) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASISetCameraMode(camera_id, camera_mode as i32);
+    /// Set the camera mode, only needs to call when the ```is_trigger_cam``` in the ```CameraInfo``` is ```true```.
+    pub fn set_camera_mode(&self, camera_mode: CameraMode) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetCameraMode(self.camera_id.into(), camera_mode as i32)};
         ErrorCode::from(status).to_result(())
     }
-}
 
-/// Send out a softTrigger. For edge trigger, it only needs to set true which means send a
-/// rising trigger to start exposure. For level trigger, it needs to set true first means 
-/// start exposure, and set false means stop exposure. It only needs to call when the 
-/// is_trigger_cam in the CameraInfo is true.
-pub fn send_soft_trigger(camera_id: i32, start: bool) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASISendSoftTrigger(camera_id, start as i32);
+    /// Send out a softTrigger. For edge trigger, it only needs to set true which means send a
+    /// rising trigger to start exposure. For level trigger, it needs to set true first means 
+    /// start exposure, and set false means stop exposure. It only needs to call when the 
+    /// ```is_trigger_cam``` in the ```CameraInfo``` is ```true```.
+    pub fn send_soft_trigger(&self, start: bool) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISendSoftTrigger(self.camera_id.into(), start as i32)};
         ErrorCode::from(status).to_result(())
     }
-}
 
-/// Get a serial number from a camera. 
-/// It is 8 ASCII characters, you need to print it in hexadecimal.
-pub fn get_serial_number(camera_id: i32) -> Result<Sn, ErrorCode> {
-    unsafe {
+    /// Get a serial number from the camera.
+    pub fn serial_number(&self) -> Result<String, ErrorCode> {
         let mut sn = ASI_SN::default();
-        let status = ASIGetSerialNumber(camera_id, &mut sn);
-        ErrorCode::from(status).to_result(Sn::from(sn))
+        let status = unsafe {ASIGetSerialNumber(self.camera_id.into(), &mut sn)};
+        let serial_number = hex::encode(sn.id);
+        ErrorCode::from(status).to_result(serial_number)
     }
-}
 
-/// Config the output pin (A or B) of Trigger port. If duration <= 0, this output pin will be closed. 
-/// It only needs to call when the is_trigger_cam in the CameraInfo is true.
-pub fn set_trigger_output_io_conf(camera_id: i32, pin: TrigOutput, pin_high: bool, delay: i32, duration: i32) -> Result<(), ErrorCode> {
-    unsafe {
-        let status = ASISetTriggerOutputIOConf(camera_id, pin as i32, pin_high as i32, delay.into(), duration.into());
-        ErrorCode::from(status).to_result(())
-    }
-}
-
-/// Get the output pin configuration, it only needs to call when the is_trigger_cam in the CameraInfo is true.
-pub fn get_trigger_output_io_conf(camera_id: i32, pin: TrigOutput) -> Result<(bool, i32, i32), ErrorCode> {
-    unsafe {
+    /// Get the output pin configuration, it only needs to call when the is_trigger_cam in the CameraInfo is true.
+    pub fn trigger_output_io_conf(&self, pin: TrigOutput) -> Result<(bool, usize, usize), ErrorCode> {
         let (mut pin_high, mut delay, mut duration) = (0, 0, 0);
-        let status = ASIGetTriggerOutputIOConf(camera_id, pin as i32, &mut pin_high, &mut delay, &mut duration);
-        ErrorCode::from(status).to_result((pin_high == 1, delay as i32, duration as i32))
+        let status = unsafe {ASIGetTriggerOutputIOConf(self.camera_id.into(), pin as i32, &mut pin_high, &mut delay, &mut duration)};
+        ErrorCode::from(status).to_result((pin_high == 1, delay as usize, duration as usize))
+    }
+
+    /// Config the output pin (A or B) of Trigger port. If duration <= 0, this output pin will be closed. 
+    /// It only needs to call when the is_trigger_cam in the CameraInfo is true.
+    pub fn set_trigger_output_io_conf(&self, pin: TrigOutput, pin_high: bool, delay: i32, duration: i32) -> Result<(), ErrorCode> {
+        let status = unsafe {ASISetTriggerOutputIOConf(self.camera_id.into(), pin as i32, pin_high as i32, delay.into(), duration.into())};
+        ErrorCode::from(status).to_result(())
     }
 }
