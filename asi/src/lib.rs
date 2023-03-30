@@ -397,6 +397,7 @@ impl From<ASI_SUPPORTED_MODE> for SupportedMode {
     }
 }
 
+#[derive(Debug)]
 pub struct Camera {
     camera_id: u8
 }
