@@ -402,6 +402,13 @@ pub struct Camera {
     camera_id: u8
 }
 
+impl From<u8> for Camera {
+    /// Get Camera struct without opening or initializing the camera.
+    fn from(id: u8) -> Self {
+        Camera { camera_id: id }
+    }
+}
+
 impl Camera {
     /// Opens and initializes the camera.
     pub fn open(camera_id: u8) -> Result<Self, ErrorCode> {
