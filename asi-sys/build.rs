@@ -40,7 +40,7 @@ fn main() {
     println!("cargo:rerun-if-changed=include/ASICamera2.h");
     let bindings = bindgen::Builder::default()
         .header("include/ASICamera2.h")
-        .parse_callbacks(Box::new(bindgen::CargoCallbacks))
+        .parse_callbacks(Box::new(bindgen::CargoCallbacks::new()))
         .generate()
         .expect("Unable to generate bindings");
 
