@@ -12,10 +12,7 @@ fn main() {
     #[cfg(all(target_os = "linux", target_arch = "aarch64"))]
     println!("cargo:rustc-link-search={}/lib/linux/armv8", dir);
 
-    #[cfg(all(target_os = "linux", target_arch = "armv7"))]
-    println!("cargo:rustc-link-search={}/lib/linux/armv7", dir);
-
-    #[cfg(all(target_os = "linux", target_arch = "armv6"))]
+    #[cfg(all(target_os = "linux", target_arch = "arm"))]
     println!("cargo:rustc-link-search={}/lib/linux/armv6", dir);
 
     #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
@@ -36,10 +33,7 @@ fn main() {
     #[cfg(all(target_os = "android", target_arch = "aarch64"))]
     println!("cargo:rustc-link-search={}/lib/android/arm64-v8a", dir);
 
-    #[cfg(all(target_os = "android", target_arch = "armv7a"))]
-    println!("cargo:rustc-link-search={}/lib/android/armeabi-v7a", dir);
-
-    #[cfg(all(target_os = "android", target_arch = "armv7"))]
+    #[cfg(all(target_os = "android", target_arch = "arm"))]
     println!("cargo:rustc-link-search={}/lib/android/armeabi", dir);
 
     println!("cargo:rustc-link-lib=ASICamera2");
