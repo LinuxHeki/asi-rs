@@ -19,7 +19,7 @@ fn main() {
     println!("cargo:rustc-link-search={}/lib/linux/armv6", dir);
 
     #[cfg(all(target_os = "macos", target_arch = "x86_64"))]
-    println!("cargo:rustc-link-search={}/lib/mac", dir);
+    println!("cargo:rustc-link-search={}/lib/macos/mac", dir);
 
     #[cfg(all(target_os = "windows", target_arch = "x86_64"))]
     println!("cargo:rustc-link-search={}/lib/windows/x64", dir);
