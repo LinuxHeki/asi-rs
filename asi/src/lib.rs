@@ -2,7 +2,7 @@ use std::ffi::CString;
 
 use asi_sys::*;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum BayerPattern {
     Rg,
     Bg,
@@ -23,7 +23,7 @@ impl From<u32> for BayerPattern {
 }
 
 /// Supported Video Format
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ImgType {
     Raw8,
     Rgb24,
@@ -44,7 +44,7 @@ impl From<i32> for ImgType {
 }
 
 /// Guider Direction
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum GuideDirection {
     North,
     South,
@@ -52,7 +52,7 @@ pub enum GuideDirection {
     West,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FlipStatus {
     None,
     Horizontal,
@@ -72,7 +72,7 @@ impl From<i32> for FlipStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum CameraMode {
     Normal,
     SoftEdge,
@@ -98,7 +98,7 @@ impl From<i32> for CameraMode {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum TrigOutput {
     /// Only pin A output
     PinA,
@@ -107,7 +107,7 @@ pub enum TrigOutput {
     None = -1,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ErrorCode {
     Success,
     /// No camera connected or index value out of boundary.
@@ -240,7 +240,7 @@ impl From<ASI_CAMERA_INFO> for CameraInfo {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ControlType {
     Gain,
     Exposure,
@@ -304,7 +304,7 @@ impl From<u32> for ControlType {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct ControlCaps {
     /// The name of the Control like Exposure, Gain etc..
     pub name: String,
@@ -336,7 +336,7 @@ impl From<ASI_CONTROL_CAPS> for ControlCaps {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum ExposureStatus {
     /// Idle states, you can start exposure now.
     Idle,
@@ -360,7 +360,7 @@ impl From<u32> for ExposureStatus {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct Id {
     pub id: [u8; 8]
 }
@@ -379,7 +379,7 @@ impl Id {
     }
 }
 
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct SupportedMode {
     /// This vector will content with the support camera mode type.
     pub camera_mode: Vec<CameraMode>,
