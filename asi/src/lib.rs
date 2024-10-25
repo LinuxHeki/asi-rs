@@ -240,7 +240,7 @@ impl From<ASI_CAMERA_INFO> for CameraInfo {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ControlType {
     Gain,
     Exposure,
