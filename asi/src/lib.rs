@@ -52,9 +52,9 @@ pub enum GuideDirection {
     West,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Default, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum FlipStatus {
-    None,
+    #[default] None,
     Horizontal,
     Vertical,
     Both,
